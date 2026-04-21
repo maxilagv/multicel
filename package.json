@@ -1,0 +1,37 @@
+{
+  "name": "sistema-gestion-cloud",
+  "version": "1.0.0",
+  "private": true,
+  "author": "Maximo Lavagetto",
+  "license": "MIT",
+  "scripts": {
+    "backend:install": "npm --prefix backend/server install",
+    "backend:dev": "npm --prefix backend/server run dev",
+    "backend:start": "npm --prefix backend/server run start",
+    "backend:migrate": "npm --prefix backend/server run migrate",
+    "backend:test": "npm --prefix backend/server run test",
+    "backend:test:coverage": "npm --prefix backend/server run test:coverage",
+    "frontend:install": "npm --prefix frontend-react install",
+    "frontend:build": "npm --prefix frontend-react run build",
+    "frontend:lint": "npm --prefix frontend-react run lint",
+    "frontend:typecheck": "npm --prefix frontend-react run typecheck",
+    "frontend:type-check": "npm --prefix frontend-react run type-check",
+    "frontend:test": "npm --prefix frontend-react run test",
+    "ci:backend": "npm run backend:test:coverage",
+    "ci:frontend": "npm run frontend:lint && npm run frontend:typecheck && npm run frontend:test && npm run frontend:build",
+    "ci": "npm run ci:backend && npm run ci:frontend",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "backend/server/**/*.js": [
+      "npm --prefix backend/server run lint:fix --"
+    ],
+    "frontend-react/src/**/*.{ts,tsx}": [
+      "npm --prefix frontend-react run lint -- --fix --max-warnings=0"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.2"
+  }
+}

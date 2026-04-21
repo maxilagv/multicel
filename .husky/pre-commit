@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Pre-commit hook — lint-staged
+# Bloquea el commit si hay errores de lint o tipos.
+# Solo verifica los archivos modificados (rapido).
+npx lint-staged

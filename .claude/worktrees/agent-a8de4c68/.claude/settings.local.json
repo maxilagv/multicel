@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(npx husky:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx vitest:*)"
+    ]
+  }
+}

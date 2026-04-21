@@ -1,0 +1,37 @@
+const express = require('express');
+const router = express.Router();
+const ctrl = require('../controllers/aicontroller');
+const agentCtrl = require('../controllers/agentcontroller');
+const workspaceCtrl = require('../controllers/aiworkspacecontroller');
+const reportCtrl = require('../controllers/reportaicontroller');
+const auth = require('../middlewares/authmiddleware');
+const { requireFeature } = require('../middlewares/licenseMiddleware');
+const { requireRole } = require('../middlewares/roleMiddleware');
+const { aiLimiter } = require('../middlewares/security');
+
+router.get('/ai/forecast', aiLimiter, auth, requireFeature('ai'), ctrl.forecast);
+router.get('/ai/forecast/:id/serie', aiLimiter, auth, requireFeature('ai'), ctrl.forecastDetail);
+router.get('/ai/stockouts', aiLimiter, auth, requireFeature('ai'), ctrl.stockouts);
+router.get('/ai/anomalias', aiLimiter, auth, requireFeature('ai'), ctrl.anomalias);
+router.get('/ai/precios', aiLimiter, auth, requireFeature('ai'), ctrl.precios);
+router.get('/ai/insights', aiLimiter, auth, requireFeature('ai'), ctrl.insights);
+router.get('/ai/prioridades', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), workspaceCtrl.dashboard);
+router.post('/ai/prioridades/actualizar', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), workspaceCtrl.refresh);
+router.post('/ai/propuestas/:id/estado', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), workspaceCtrl.updateProposalStatus);
+router.post('/ai/propuestas/:id/solicitar-aprobacion', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), workspaceCtrl.requestApproval);
+router.post('/ai/propuestas/:id/ejecutar', aiLimiter, auth, requireFeature('ai'), requireRole(['admin']), workspaceCtrl.execute);
+router.get('/ai/report-data', aiLimiter, auth, requireFeature('ai'), reportCtrl.reportData);
+router.post('/ai/report-summary', aiLimiter, auth, requireFeature('ai'), reportCtrl.reportSummary);
+router.post('/ai/executive-assistant', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), reportCtrl.executiveAssistant);
+router.post('/ai/predictions-summary', aiLimiter, auth, requireFeature('ai'), ctrl.predictionsSummary);
+router.post('/ai/agent/run', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), agentCtrl.runAgent);
+router.get('/ai/agent/sessions', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), agentCtrl.listSessions);
+router.get('/ai/agent/session/:id', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), agentCtrl.getSession);
+router.post('/ai/agent/session/:id/continue', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), agentCtrl.continueSession);
+router.get('/ai/agent/runs/:id', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), agentCtrl.getRun);
+router.post('/ai/agent/feedback', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), agentCtrl.createFeedback);
+router.post('/ai/agent/evaluations/replay', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), agentCtrl.replayEvaluation);
+router.get('/ai/agent/status', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), agentCtrl.getStatus);
+router.get('/ai/agent/ops/overview', aiLimiter, auth, requireFeature('ai'), requireRole(['admin', 'gerente']), agentCtrl.getOperationsOverview);
+
+module.exports = router;

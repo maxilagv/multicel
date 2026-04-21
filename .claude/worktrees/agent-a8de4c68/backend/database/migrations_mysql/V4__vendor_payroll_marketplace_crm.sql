@@ -1,0 +1,202 @@
+CREATE TABLE IF NOT EXISTS vendedores_comisiones (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  usuario_id BIGINT UNSIGNED NOT NULL,
+  periodo VARCHAR(10) NOT NULL,
+  porcentaje DECIMAL(7,2) NOT NULL DEFAULT 0,
+  base_tipo VARCHAR(20) NOT NULL DEFAULT 'bruto',
+  vigencia_desde DATE NOT NULL,
+  vigencia_hasta DATE NULL,
+  activo TINYINT(1) NOT NULL DEFAULT 1,
+  activo_unico TINYINT(1) GENERATED ALWAYS AS (CASE WHEN activo = 1 THEN 1 ELSE NULL END) STORED,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_vendedores_comisiones_usuario (usuario_id),
+  KEY ix_vendedores_comisiones_periodo (periodo),
+  KEY ix_vendedores_comisiones_vigencia (vigencia_desde, vigencia_hasta),
+  UNIQUE KEY uq_vendedores_comisiones_activa (usuario_id, periodo, activo_unico),
+  CONSTRAINT fk_vendedores_comisiones_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS vendedores_pagos (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  usuario_id BIGINT UNSIGNED NOT NULL,
+  periodo VARCHAR(10) NOT NULL,
+  desde DATE NOT NULL,
+  hasta DATE NOT NULL,
+  ventas_total DECIMAL(18,2) NOT NULL DEFAULT 0,
+  porcentaje DECIMAL(7,2) NOT NULL DEFAULT 0,
+  monto_calculado DECIMAL(18,2) NOT NULL DEFAULT 0,
+  monto_pagado DECIMAL(18,2) NOT NULL,
+  fecha_pago DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  metodo VARCHAR(20) NULL,
+  notas TEXT NULL,
+  usuario_registro BIGINT UNSIGNED NULL,
+  PRIMARY KEY (id),
+  KEY ix_vendedores_pagos_usuario (usuario_id),
+  KEY ix_vendedores_pagos_periodo (periodo),
+  KEY ix_vendedores_pagos_rango (desde, hasta),
+  KEY ix_vendedores_pagos_fecha (fecha_pago),
+  CONSTRAINT fk_vendedores_pagos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_vendedores_pagos_usuario_registro FOREIGN KEY (usuario_registro) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS pymes_aliadas (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(200) NOT NULL,
+  rubro VARCHAR(120) NULL,
+  contacto VARCHAR(120) NULL,
+  telefono VARCHAR(50) NULL,
+  email VARCHAR(255) NULL,
+  direccion TEXT NULL,
+  localidad VARCHAR(120) NULL,
+  provincia VARCHAR(120) NULL,
+  notas TEXT NULL,
+  activo TINYINT(1) NOT NULL DEFAULT 1,
+  external_id VARCHAR(120) NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_pymes_aliadas_external (external_id),
+  KEY ix_pymes_aliadas_nombre (nombre),
+  KEY ix_pymes_aliadas_activo (activo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS alianzas (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  pyme_id BIGINT UNSIGNED NOT NULL,
+  nombre VARCHAR(200) NULL,
+  estado VARCHAR(20) NOT NULL DEFAULT 'activa',
+  vigencia_desde DATETIME NULL,
+  vigencia_hasta DATETIME NULL,
+  comision_tipo VARCHAR(20) NOT NULL DEFAULT 'porcentaje',
+  comision_valor DECIMAL(10,2) NOT NULL DEFAULT 0,
+  beneficio_tipo VARCHAR(20) NOT NULL DEFAULT 'porcentaje',
+  beneficio_valor DECIMAL(10,2) NOT NULL DEFAULT 0,
+  limite_usos INT NOT NULL DEFAULT 0,
+  notas TEXT NULL,
+  activo TINYINT(1) NOT NULL DEFAULT 1,
+  external_id VARCHAR(120) NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_alianzas_external (external_id),
+  KEY ix_alianzas_pyme (pyme_id),
+  KEY ix_alianzas_estado (estado),
+  KEY ix_alianzas_activo (activo),
+  CONSTRAINT fk_alianzas_pyme FOREIGN KEY (pyme_id) REFERENCES pymes_aliadas(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS alianzas_ofertas (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  alianza_id BIGINT UNSIGNED NOT NULL,
+  nombre VARCHAR(200) NOT NULL,
+  descripcion TEXT NULL,
+  precio_fijo DECIMAL(18,2) NULL,
+  activo TINYINT(1) NOT NULL DEFAULT 1,
+  external_id VARCHAR(120) NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_alianzas_ofertas_external (external_id),
+  KEY ix_alianzas_ofertas_alianza (alianza_id),
+  KEY ix_alianzas_ofertas_activo (activo),
+  CONSTRAINT fk_alianzas_ofertas_alianza FOREIGN KEY (alianza_id) REFERENCES alianzas(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS alianzas_ofertas_items (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  oferta_id BIGINT UNSIGNED NOT NULL,
+  producto_id BIGINT UNSIGNED NOT NULL,
+  cantidad INT NOT NULL DEFAULT 1,
+  PRIMARY KEY (id),
+  KEY ix_ofertas_items_oferta (oferta_id),
+  KEY ix_ofertas_items_producto (producto_id),
+  CONSTRAINT fk_ofertas_items_oferta FOREIGN KEY (oferta_id) REFERENCES alianzas_ofertas(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ofertas_items_producto FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS referidos (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  alianza_id BIGINT UNSIGNED NOT NULL,
+  codigo VARCHAR(50) NOT NULL,
+  estado VARCHAR(20) NOT NULL DEFAULT 'activo',
+  max_usos INT NOT NULL DEFAULT 0,
+  usos_actuales INT NOT NULL DEFAULT 0,
+  vigencia_desde DATETIME NULL,
+  vigencia_hasta DATETIME NULL,
+  beneficio_tipo VARCHAR(20) NULL,
+  beneficio_valor DECIMAL(10,2) NULL,
+  notas TEXT NULL,
+  external_id VARCHAR(120) NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_referidos_codigo (codigo),
+  UNIQUE KEY uq_referidos_external (external_id),
+  KEY ix_referidos_alianza (alianza_id),
+  KEY ix_referidos_estado (estado),
+  CONSTRAINT fk_referidos_alianza FOREIGN KEY (alianza_id) REFERENCES alianzas(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS uso_referidos (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  referido_id BIGINT UNSIGNED NOT NULL,
+  venta_id BIGINT UNSIGNED NOT NULL,
+  fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  total_venta DECIMAL(18,2) NOT NULL DEFAULT 0,
+  descuento_aplicado DECIMAL(18,2) NOT NULL DEFAULT 0,
+  comision_monto DECIMAL(18,2) NOT NULL DEFAULT 0,
+  usuario_id BIGINT UNSIGNED NULL,
+  notas TEXT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_uso_referidos_venta (venta_id),
+  KEY ix_uso_referidos_referido (referido_id),
+  KEY ix_uso_referidos_fecha (fecha),
+  CONSTRAINT fk_uso_referidos_referido FOREIGN KEY (referido_id) REFERENCES referidos(id) ON DELETE CASCADE,
+  CONSTRAINT fk_uso_referidos_venta FOREIGN KEY (venta_id) REFERENCES ventas(id) ON DELETE CASCADE,
+  CONSTRAINT fk_uso_referidos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS crm_oportunidades (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  cliente_id BIGINT UNSIGNED NOT NULL,
+  titulo VARCHAR(255) NOT NULL,
+  fase VARCHAR(20) NOT NULL DEFAULT 'lead',
+  valor_estimado DECIMAL(18,2) NOT NULL DEFAULT 0,
+  probabilidad INT NOT NULL DEFAULT 0,
+  fecha_cierre_estimada DATETIME NULL,
+  owner_usuario_id BIGINT UNSIGNED NULL,
+  notas TEXT NULL,
+  oculto TINYINT(1) NOT NULL DEFAULT 0,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_crm_op_cliente (cliente_id),
+  KEY ix_crm_op_fase (fase),
+  KEY ix_crm_op_owner (owner_usuario_id),
+  KEY ix_crm_op_oculto (oculto),
+  CONSTRAINT fk_crm_op_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_crm_op_owner FOREIGN KEY (owner_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS crm_actividades (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  cliente_id BIGINT UNSIGNED NULL,
+  oportunidad_id BIGINT UNSIGNED NULL,
+  tipo VARCHAR(20) NOT NULL,
+  asunto VARCHAR(255) NOT NULL,
+  descripcion TEXT NULL,
+  fecha_hora DATETIME NULL,
+  estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+  asignado_a_usuario_id BIGINT UNSIGNED NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_crm_act_cliente (cliente_id),
+  KEY ix_crm_act_oportunidad (oportunidad_id),
+  KEY ix_crm_act_estado (estado),
+  CONSTRAINT fk_crm_act_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL,
+  CONSTRAINT fk_crm_act_oportunidad FOREIGN KEY (oportunidad_id) REFERENCES crm_oportunidades(id) ON DELETE SET NULL,
+  CONSTRAINT fk_crm_act_asignado FOREIGN KEY (asignado_a_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

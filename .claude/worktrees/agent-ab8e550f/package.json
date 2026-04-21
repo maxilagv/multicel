@@ -1,0 +1,15 @@
+{
+  "name": "sistema-gestion-cloud",
+  "version": "1.0.0",
+  "private": true,
+  "author": "Maximo Lavagetto",
+  "license": "MIT",
+  "scripts": {
+    "backend:install": "npm --prefix backend/server install",
+    "backend:dev": "npm --prefix backend/server run dev",
+    "backend:start": "npm --prefix backend/server run start",
+    "backend:migrate": "npm --prefix backend/server run migrate",
+    "frontend:install": "npm --prefix frontend-react install",
+    "frontend:build": "npm --prefix frontend-react run build"
+  }
+}

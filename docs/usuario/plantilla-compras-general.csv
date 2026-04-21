@@ -1,0 +1,6 @@
+compra_ref,proveedor,producto_codigo,fecha,moneda,cantidad,costo_unitario,tipo_cambio,oc_numero,adjunto_url
+COMPRA-001,asterix,SKU-XR2WJL,2026-01-15,ARS,10,8500,,,
+COMPRA-001,asterix,SKU-MLT14G,2026-01-15,USD,2,500,1300,,
+COMPRA-001,asterix,SKU-DRHXW7,2026-01-15,USD,3,450,1300,,
+COMPRA-002,asterix,SKU-BBUIIC,2026-01-20,USD,2,450,1300,OC-2026-02,
+COMPRA-002,asterix,SKU-JDNGQW,2026-01-20,USD,1,580,1300,OC-2026-02,

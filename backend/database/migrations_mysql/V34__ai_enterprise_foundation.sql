@@ -1,0 +1,127 @@
+CREATE TABLE IF NOT EXISTS ai_runs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  agent VARCHAR(100) NOT NULL,
+  agent_version VARCHAR(40) NULL,
+  objective VARCHAR(120) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'running',
+  requested_by_usuario_id BIGINT UNSIGNED NULL,
+  scope_json JSON NULL,
+  summary_json JSON NULL,
+  started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_ai_runs_status_started (status, started_at),
+  KEY ix_ai_runs_objective_started (objective, started_at),
+  KEY ix_ai_runs_requested_by (requested_by_usuario_id),
+  CONSTRAINT fk_ai_runs_requested_by FOREIGN KEY (requested_by_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_run_steps (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  run_id BIGINT UNSIGNED NOT NULL,
+  step_order INT UNSIGNED NOT NULL,
+  step_key VARCHAR(80) NOT NULL,
+  title VARCHAR(160) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'ok',
+  details_json JSON NULL,
+  started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_ai_run_steps_run_order (run_id, step_order),
+  KEY ix_ai_run_steps_status (status),
+  CONSTRAINT fk_ai_run_steps_run FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_action_proposals (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  run_id BIGINT UNSIGNED NULL,
+  proposal_key VARCHAR(190) NOT NULL,
+  source_type VARCHAR(80) NOT NULL,
+  source_key VARCHAR(190) NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  priority_level VARCHAR(20) NOT NULL DEFAULT 'media',
+  title VARCHAR(180) NOT NULL,
+  summary TEXT NULL,
+  why_text TEXT NULL,
+  recommended_action TEXT NULL,
+  expected_impact TEXT NULL,
+  evidence_json JSON NULL,
+  entity_type VARCHAR(80) NULL,
+  entity_id BIGINT UNSIGNED NULL,
+  entity_name VARCHAR(180) NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'pendiente',
+  requires_approval TINYINT(1) NOT NULL DEFAULT 0,
+  approval_id BIGINT UNSIGNED NULL,
+  approval_requested_at DATETIME NULL,
+  resolved_by_usuario_id BIGINT UNSIGNED NULL,
+  resolved_note TEXT NULL,
+  last_seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_ai_action_proposals_key (proposal_key),
+  KEY ix_ai_action_proposals_status (status),
+  KEY ix_ai_action_proposals_category_priority (category, priority_level),
+  KEY ix_ai_action_proposals_last_seen (last_seen_at),
+  KEY ix_ai_action_proposals_entity (entity_type, entity_id),
+  KEY ix_ai_action_proposals_run (run_id),
+  KEY ix_ai_action_proposals_approval (approval_id),
+  CONSTRAINT fk_ai_action_proposals_run FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_action_proposals_approval FOREIGN KEY (approval_id) REFERENCES aprobaciones(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_action_proposals_resolved_by FOREIGN KEY (resolved_by_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_action_executions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  proposal_id BIGINT UNSIGNED NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+  channel VARCHAR(60) NULL,
+  payload_json JSON NULL,
+  result_json JSON NULL,
+  automation_event_id BIGINT UNSIGNED NULL,
+  requested_by_usuario_id BIGINT UNSIGNED NULL,
+  executed_by_usuario_id BIGINT UNSIGNED NULL,
+  started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_ai_action_executions_proposal (proposal_id),
+  KEY ix_ai_action_executions_proposal (proposal_id),
+  KEY ix_ai_action_executions_status (status),
+  KEY ix_ai_action_executions_automation (automation_event_id),
+  CONSTRAINT fk_ai_action_executions_proposal FOREIGN KEY (proposal_id) REFERENCES ai_action_proposals(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ai_action_executions_automation FOREIGN KEY (automation_event_id) REFERENCES automation_events(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_action_executions_requested_by FOREIGN KEY (requested_by_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_action_executions_executed_by FOREIGN KEY (executed_by_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_feedback (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  proposal_id BIGINT UNSIGNED NULL,
+  run_id BIGINT UNSIGNED NULL,
+  feedback_type VARCHAR(40) NOT NULL,
+  rating SMALLINT NULL,
+  notes TEXT NULL,
+  created_by_usuario_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_ai_feedback_proposal (proposal_id),
+  KEY ix_ai_feedback_run (run_id),
+  KEY ix_ai_feedback_type (feedback_type),
+  CONSTRAINT fk_ai_feedback_proposal FOREIGN KEY (proposal_id) REFERENCES ai_action_proposals(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_feedback_run FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_feedback_created_by FOREIGN KEY (created_by_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO reglas_aprobacion (clave, descripcion, condicion, activo)
+VALUES (
+  'ai_action_execution',
+  'Autoriza acciones sugeridas por el centro operativo de IA antes de ejecutarlas',
+  '{"requires_manual_review":true}',
+  1
+);

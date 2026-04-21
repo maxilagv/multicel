@@ -1,0 +1,58 @@
+name: Backup Verify
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+    - cron: '30 5 * * 0'
+  workflow_dispatch:
+
+jobs:
+  daily-backup:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * *' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/server
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MySQL and AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-mysql-client awscli gzip openssl
+      - name: Create and upload encrypted backup
+        env:
+          MYSQL_HOST: ${{ secrets.BACKUP_MYSQL_HOST }}
+          MYSQL_PORT: ${{ secrets.BACKUP_MYSQL_PORT }}
+          MYSQL_USER: ${{ secrets.BACKUP_MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.BACKUP_MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.BACKUP_MYSQL_DATABASE }}
+          BACKUP_BUCKET_URI: ${{ secrets.BACKUP_BUCKET_URI }}
+          BACKUP_PREFIX: ${{ secrets.BACKUP_PREFIX }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        run: bash ./scripts/backup-encrypted.sh
+
+  weekly-restore-verify:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '30 5 * * 0' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/server
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MySQL and AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-mysql-client awscli gzip openssl
+      - name: Restore latest backup into verification database
+        env:
+          BACKUP_BUCKET_URI: ${{ secrets.BACKUP_BUCKET_URI }}
+          BACKUP_PREFIX: ${{ secrets.BACKUP_PREFIX }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          VERIFY_MYSQL_HOST: ${{ secrets.STAGING_MYSQL_HOST }}
+          VERIFY_MYSQL_PORT: ${{ secrets.STAGING_MYSQL_PORT }}
+          VERIFY_MYSQL_USER: ${{ secrets.STAGING_MYSQL_USER }}
+          VERIFY_MYSQL_PASSWORD: ${{ secrets.STAGING_MYSQL_PASSWORD }}
+          VERIFY_MYSQL_DATABASE: ${{ secrets.STAGING_VERIFY_DATABASE }}
+        run: bash ./scripts/restore-verify.sh
